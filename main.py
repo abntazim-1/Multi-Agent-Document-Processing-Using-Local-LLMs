@@ -20,7 +20,7 @@ from langchain_core.prompts import ChatPromptTemplate
 logger = get_logger("main")
 
 # -------- CONFIG --------
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")  # or "gemma:2b", "llama3", etc.
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama:1.1b")  # or "gemma:2b", "llama3", etc.
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 DATA_DIR = Path("data/")
