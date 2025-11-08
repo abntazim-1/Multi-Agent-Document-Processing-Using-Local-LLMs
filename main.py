@@ -1,233 +1,298 @@
-
-# main.py
 """
-Local Agentic AI Workflow Simulation (3 agents)
-- Read -> Summarize -> Decide -> Report
+Agentic Workflow Controller
+Orchestrates the execution of all agents in the workflow pipeline.
+
+Workflow:
+1. Document Ingestion Agent → loads, cleans, and chunks documents
+2. Summarizer Agent → generates concise summaries
+3. Decision Agent → performs logical analysis and derives insights
+4. Reporter Agent → converts decisions into natural explanations
+5. Report Generation Agent → compiles final structured report
+
 Requires: Ollama (daemon running + model pulled), LangChain, langchain-ollama
 """
 
 import os
 from pathlib import Path
-from typing import List, Dict
+from typing import Optional
 
-# Logging
 from logging_config import get_logger
 
-# LangChain & Ollama
-from langchain_ollama import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate
+# Import all agents
+from agents import (
+    run_doc_ingestion,
+    run_summarizer,
+    run_decision,
+    run_reporter,
+    run_report_generation,
+    DocIngestionResult,
+    SummarizerResult,
+    DecisionResult,
+    ReporterResult,
+    ReportGenerationResult
+)
 
 logger = get_logger("main")
 
 # -------- CONFIG --------
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama:1.1b")  # or "gemma:2b", "llama3", etc.
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama:1.1b")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+DATA_DIR = Path(os.getenv("DATA_DIR", "artifacts/"))
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "."))
+REPORT_FILENAME = os.getenv("REPORT_FILENAME", "report.txt")
+JSON_REPORT_FILENAME = os.getenv("JSON_REPORT_FILENAME", "report.json")
 
-DATA_DIR = Path("data/")
+# Agent-specific model configuration (can use different models for different tasks)
+SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", OLLAMA_MODEL)
+DECISION_MODEL = os.getenv("DECISION_MODEL", OLLAMA_MODEL)
+REPORTER_MODEL = os.getenv("REPORTER_MODEL", OLLAMA_MODEL)
+TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 
-# --------- helpers ----------
-def read_text_files(folder: Path) -> List[Dict]:
-    """Read all .txt files into a list of dicts {filename, text}"""
-    docs = []
-    folder = Path(folder).resolve()  # Ensure absolute path
-    
-    if not folder.exists():
-        logger.error(f"Data directory does not exist: {folder}")
-        return docs
-    
-    logger.info(f"Reading files from: {folder}")
-    
-    # Get all .txt files
-    txt_files = list(folder.glob("*.txt"))
-    logger.info(f"Found {len(txt_files)} .txt files: {[f.name for f in txt_files]}")
-    
-    for file_path in txt_files:
-        try:
-            # Read with error handling and encoding fallback
-            try:
-                text = file_path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                logger.warning(f"UTF-8 decode failed for {file_path.name}, trying latin-1")
-                text = file_path.read_text(encoding="latin-1")
-            
-            # Strip whitespace but keep structure
-            text = text.strip()
-            
-            if not text:
-                logger.warning(f"File {file_path.name} is empty, skipping")
-                continue
-            
-            docs.append({
-                "filename": file_path.name,
-                "text": text,
-                "filepath": str(file_path)
-            })
-            logger.info(f"Successfully read {file_path.name} ({len(text)} characters)")
-            
-        except Exception as e:
-            logger.error(f"Error reading file {file_path.name}: {e}")
-            continue
-    
-    return docs
 
-def combine_documents(docs: List[Dict]) -> str:
-    """Combine all documents into a single text string with proper formatting"""
-    if not docs:
-        logger.warning("No documents to combine")
-        return ""
-    
-    combined_parts = []
-    for d in docs:
-        filename = d.get('filename', 'unknown')
-        text = d.get('text', '')
-        
-        # Ensure text is not empty
-        if not text or not text.strip():
-            logger.warning(f"Skipping empty document: {filename}")
-            continue
-        
-        # Format: filename header followed by content
-        combined_parts.append(f"=== {filename} ===\n{text.strip()}\n")
-    
-    if not combined_parts:
-        logger.error("No valid document content to combine")
-        return ""
-    
-    combined_text = "\n".join(combined_parts).strip()
-    logger.info(f"Combined {len(docs)} documents into {len(combined_text)} characters")
-    
-    return combined_text
-
-# --------- Summarizer Agent ----------
-def summarizer_agent(llm, document_text: str):
+def run_workflow(
+    data_dir: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+    summarizer_model: Optional[str] = None,
+    decision_model: Optional[str] = None,
+    reporter_model: Optional[str] = None,
+    temperature: float = 0.2,
+    report_filename: Optional[str] = None,
+    json_filename: Optional[str] = None
+) -> bool:
     """
-    Summarizes the document text into concise bullet points.
+    Run the complete agentic workflow pipeline.
+    
+    Args:
+        data_dir: Directory containing input text files (default: DATA_DIR)
+        output_dir: Directory for output reports (default: OUTPUT_DIR)
+        summarizer_model: Model name for summarizer agent (default: SUMMARIZER_MODEL)
+        decision_model: Model name for decision agent (default: DECISION_MODEL)
+        reporter_model: Model name for reporter agent (default: REPORTER_MODEL)
+        temperature: Temperature setting for all agents (default: 0.2)
+        report_filename: Name of the text report file (default: REPORT_FILENAME)
+        json_filename: Name of the JSON report file (default: JSON_REPORT_FILENAME)
+        
+    Returns:
+        True if workflow completed successfully, False otherwise
     """
-    # Validate input
-    if not document_text or not document_text.strip():
-        logger.error("Empty document text provided to summarizer agent")
-        return "Error: No content to summarize"
+    logger.info("="*80)
+    logger.info("AGENTIC WORKFLOW PIPELINE")
+    logger.info("="*80)
+    logger.info(f"Data directory: {data_dir or DATA_DIR}")
+    logger.info(f"Output directory: {output_dir or OUTPUT_DIR}")
+    logger.info(f"Summarizer model: {summarizer_model or SUMMARIZER_MODEL}")
+    logger.info(f"Decision model: {decision_model or DECISION_MODEL}")
+    logger.info(f"Reporter model: {reporter_model or REPORTER_MODEL}")
+    logger.info(f"Temperature: {temperature}")
     
-    logger.info(f"Summarizing document with {len(document_text)} characters")
-    logger.debug(f"Document preview: {document_text[:200]}...")
-    
-    prompt = ChatPromptTemplate.from_template(
-        "Summarize the following text in 3 concise bullet points:\n\n{document}\n\nBullets:"
-    )
-    chain = prompt | llm
+    # Use defaults if not provided
+    data_dir = data_dir or DATA_DIR
+    output_dir = output_dir or OUTPUT_DIR
+    summarizer_model = summarizer_model or SUMMARIZER_MODEL
+    decision_model = decision_model or DECISION_MODEL
+    reporter_model = reporter_model or REPORTER_MODEL
     
     try:
-        output = chain.invoke({"document": document_text}).content
-        logger.info(f"Summary generated successfully ({len(output)} characters)")
-        return output
+        # Step 1: Document Ingestion Agent
+        logger.info("\n" + "="*80)
+        logger.info("STEP 1: DOCUMENT INGESTION AGENT")
+        logger.info("="*80)
+        ingestion_result: DocIngestionResult = run_doc_ingestion(
+            data_dir=data_dir,
+            chunk_size=1000,
+            chunk_overlap=200,
+            enable_cleaning=True
+        )
+        
+        if not ingestion_result.success:
+            logger.error(f"Document ingestion failed: {ingestion_result.error_message}")
+            return False
+        
+        if not ingestion_result.combined_text:
+            logger.error("No text content available after ingestion")
+            return False
+        
+        logger.info(f"✓ Document ingestion completed: {ingestion_result.metadata['num_documents']} documents processed")
+        
+        # Step 2: Summarizer Agent
+        logger.info("\n" + "="*80)
+        logger.info("STEP 2: SUMMARIZER AGENT")
+        logger.info("="*80)
+        summarizer_result: SummarizerResult = run_summarizer(
+            text=ingestion_result.combined_text,
+            model_name=summarizer_model,
+            temperature=temperature,
+            num_bullets=3
+        )
+        
+        if not summarizer_result.success:
+            logger.error(f"Summarizer agent failed: {summarizer_result.error_message}")
+            return False
+        
+        logger.info(f"✓ Summary generated: {summarizer_result.num_bullets} bullet points, {summarizer_result.summary_length} characters")
+        logger.info(f"Summary preview: {summarizer_result.summary[:200]}...")
+        
+        # Step 3: Decision Agent
+        logger.info("\n" + "="*80)
+        logger.info("STEP 3: DECISION AGENT")
+        logger.info("="*80)
+        decision_result: DecisionResult = run_decision(
+            summary=summarizer_result.summary,
+            model_name=decision_model,
+            temperature=temperature
+        )
+        
+        if not decision_result.success:
+            logger.error(f"Decision agent failed: {decision_result.error_message}")
+            return False
+        
+        logger.info(f"✓ Decision generated: Action required={decision_result.action_required}, {len(decision_result.next_steps)} next steps")
+        logger.info(f"Decision preview: {decision_result.decision[:200]}...")
+        
+        # Step 4: Reporter Agent
+        logger.info("\n" + "="*80)
+        logger.info("STEP 4: REPORTER AGENT")
+        logger.info("="*80)
+        reporter_result: ReporterResult = run_reporter(
+            summary=summarizer_result.summary,
+            decision=decision_result.decision,
+            model_name=reporter_model,
+            temperature=temperature,
+            max_words=150
+        )
+        
+        if not reporter_result.success:
+            logger.error(f"Reporter agent failed: {reporter_result.error_message}")
+            return False
+        
+        logger.info(f"✓ Report generated: {reporter_result.word_count} words, {reporter_result.report_length} characters")
+        logger.info(f"Report preview: {reporter_result.report[:200]}...")
+        
+        # Step 5: Report Generation Agent
+        logger.info("\n" + "="*80)
+        logger.info("STEP 5: REPORT GENERATION AGENT")
+        logger.info("="*80)
+        report_gen_result: ReportGenerationResult = run_report_generation(
+            summary=summarizer_result.summary,
+            decision=decision_result.decision,
+            reporter_output=reporter_result.report,
+            ingestion_metadata=ingestion_result.metadata,
+            output_dir=output_dir,
+            output_filename=report_filename or REPORT_FILENAME,
+            json_filename=json_filename or JSON_REPORT_FILENAME
+        )
+        
+        if not report_gen_result.success:
+            logger.error(f"Report generation failed: {report_gen_result.error_message}")
+            return False
+        
+        logger.info(f"✓ Final report generated: {report_gen_result.report_path}")
+        logger.info(f"✓ JSON report generated: {report_gen_result.json_path}")
+        
+        # Workflow completion summary
+        logger.info("\n" + "="*80)
+        logger.info("WORKFLOW COMPLETED SUCCESSFULLY")
+        logger.info("="*80)
+        logger.info(f"Documents processed: {ingestion_result.metadata['num_documents']}")
+        logger.info(f"Summary: {summarizer_result.num_bullets} bullet points")
+        logger.info(f"Decision: Action required = {decision_result.action_required}")
+        logger.info(f"Report: {reporter_result.word_count} words")
+        logger.info(f"Output files:")
+        logger.info(f"  - {report_gen_result.report_path}")
+        logger.info(f"  - {report_gen_result.json_path}")
+        
+        # Print summary to console
+        print("\n" + "="*80)
+        print("WORKFLOW EXECUTION SUMMARY")
+        print("="*80)
+        print(f"✓ Document Ingestion: {ingestion_result.metadata['num_documents']} documents")
+        print(f"✓ Summary: {summarizer_result.num_bullets} bullet points")
+        print(f"✓ Decision: Action required = {decision_result.action_required}")
+        print(f"✓ Report: {reporter_result.word_count} words")
+        print(f"\nReports saved to:")
+        print(f"  - {report_gen_result.report_path}")
+        print(f"  - {report_gen_result.json_path}")
+        print("="*80)
+        
+        return True
+        
     except Exception as e:
-        logger.exception(f"Error in summarizer agent: {e}")
-        raise
+        logger.exception(f"Fatal error in workflow execution: {e}")
+        return False
 
-# --------- Decision Agent ----------
-def decision_agent(llm, summary_text: str):
-    """
-    Based on summary, decide whether action is required and provide next steps.
-    """
-    prompt = ChatPromptTemplate.from_template(
-        "Given this summary:\n{summary_text}\n\nDecide whether any action is required (Yes/No). "
-        "Provide a short justification and two next steps."
+
+def main():
+    """Main entry point for the workflow."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Run the agentic workflow pipeline")
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default=None,
+        help=f"Directory containing input text files (default: {DATA_DIR})"
     )
-    chain = prompt | llm
-    decision = chain.invoke({"summary_text": summary_text}).content
-    return decision
-
-# --------- Reporter Agent ----------
-def reporter_agent(llm, summary_text: str, decision_text: str):
-    """
-    Produce a final human-facing report combining summary and decision.
-    """
-    prompt = ChatPromptTemplate.from_template(
-        "Combine the following information into a concise professional report for a stakeholder. "
-        "Limit to 150 words.\n\nSummary:\n{summary_text}\n\nDecision & Steps:\n{decision}"
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help=f"Directory for output reports (default: {OUTPUT_DIR})"
     )
-    chain = prompt | llm
-    report_text = chain.invoke({
-        "summary_text": summary_text,
-        "decision": decision_text
-    }).content
-    return report_text
+    parser.add_argument(
+        "--summarizer-model",
+        type=str,
+        default=None,
+        help=f"Model for summarizer agent (default: {SUMMARIZER_MODEL})"
+    )
+    parser.add_argument(
+        "--decision-model",
+        type=str,
+        default=None,
+        help=f"Model for decision agent (default: {DECISION_MODEL})"
+    )
+    parser.add_argument(
+        "--reporter-model",
+        type=str,
+        default=None,
+        help=f"Model for reporter agent (default: {REPORTER_MODEL})"
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=TEMPERATURE,
+        help=f"Temperature for all agents (default: {TEMPERATURE})"
+    )
+    parser.add_argument(
+        "--report-filename",
+        type=str,
+        default=REPORT_FILENAME,
+        help=f"Name of the text report file (default: {REPORT_FILENAME})"
+    )
+    parser.add_argument(
+        "--json-report-filename",
+        type=str,
+        default=JSON_REPORT_FILENAME,
+        help=f"Name of the JSON report file (default: {JSON_REPORT_FILENAME})"
+    )
+    
+    args = parser.parse_args()
+    
+    # Run workflow
+    success = run_workflow(
+        data_dir=Path(args.data_dir) if args.data_dir else None,
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+        summarizer_model=args.summarizer_model,
+        decision_model=args.decision_model,
+        reporter_model=args.reporter_model,
+        temperature=args.temperature,
+        report_filename=args.report_filename,
+        json_filename=args.json_report_filename
+    )
+    
+    if not success:
+        logger.error("Workflow execution failed")
+        exit(1)
 
-# --------- setup local Ollama client (LangChain wrapper) ----------
-def make_ollama_client(model_name: str = None):
-    """Create an Ollama LLM client. Optionally specify a different model for this task."""
-    model = model_name or OLLAMA_MODEL
-    client = ChatOllama(model=model, base_url=OLLAMA_BASE_URL, temperature=0.2)
-    return client
-
-# --------- main flow ----------
-def run_pipeline():
-    logger.info("=== Local Agentic Workflow Demo ===")
-    docs = read_text_files(DATA_DIR)
-    logger.info(f"Found {len(docs)} documents in {DATA_DIR}")
-    
-    if not docs:
-        logger.warning("No documents found. Please add .txt files to the data/ directory.")
-        return
-    
-    # Display the documents that were read
-    print("\n" + "="*60)
-    print("DOCUMENTS READ FROM DATA FOLDER:")
-    print("="*60)
-    for doc in docs:
-        print(f"\n--- {doc['filename']} ---")
-        print(doc['text'])
-        print("-" * 60)
-    print("\n")
-    
-    # Combine all documents into a single text
-    combined_text = combine_documents(docs)
-    
-    if not combined_text or not combined_text.strip():
-        logger.error("No content available to process. Check if documents contain text.")
-        print("\nERROR: No document content available for processing!")
-        return
-    
-    logger.info(f"Combined document length: {len(combined_text)} characters")
-    
-    # Debug: Show a preview of what will be sent to LLM
-    print("\n" + "="*60)
-    print("COMBINED TEXT TO BE SENT TO LLM (first 500 chars):")
-    print("="*60)
-    print(combined_text[:500])
-    if len(combined_text) > 500:
-        print(f"... ({len(combined_text) - 500} more characters)")
-    print("="*60 + "\n")
-
-    # Initialize LLM clients (can use different models for different tasks if needed)
-    logger.info("Initializing Ollama LLM clients...")
-    llm_summary = make_ollama_client()  # Can specify different model: make_ollama_client("mistral")
-    llm_decision = make_ollama_client()  # Can specify different model: make_ollama_client("llama3")
-    llm_reporter = make_ollama_client()  # Can specify different model: make_ollama_client("gemma")
-
-    # 1) Summarize
-    logger.info("Starting summarizer agent...")
-    summary = summarizer_agent(llm_summary, combined_text)
-    logger.info(f"Summary:\n{summary}")
-
-    # 2) Decision making
-    logger.info("Starting decision agent...")
-    decision = decision_agent(llm_decision, summary)
-    logger.info(f"Decision:\n{decision}")
-
-    # 3) Reporting
-    logger.info("Starting reporter agent...")
-    report = reporter_agent(llm_reporter, summary, decision)
-    logger.info(f"\n--- FINAL REPORT ---\n{report}")
-    
-    # Save report
-    Path("report.txt").write_text(report, encoding="utf-8")
-    logger.info("Report saved to report.txt")
-    logger.info("Pipeline completed successfully")
 
 if __name__ == "__main__":
-    try:
-        run_pipeline()
-    except Exception as e:
-        logger.exception("Fatal error in pipeline execution")
-        raise
+    main()

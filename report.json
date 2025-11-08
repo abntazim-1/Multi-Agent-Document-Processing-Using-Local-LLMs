@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "execution_timestamp": "2025-11-08 20:51:32",
+    "workflow_version": "1.0",
+    "ingestion": {
+      "num_documents": 1,
+      "total_characters": 2636,
+      "num_chunks": 4,
+      "chunk_size": 1000,
+      "chunk_overlap": 200,
+      "cleaning_enabled": true,
+      "file_names": [
+        "sample.txt"
+      ]
+    }
+  },
+  "summary": {
+    "text": "Global warming is a phenomenon that has been observed over almost every conceivable timescales since the beginning of geologic time, and human activities have been responsible for a worldwide average temperature increase between 0.8 and 1.2\u00b0C (1.4 and 2.2\u00b0F) since preindustrial times. The Intergovernmental Panel on Climate Change (IPCC) has produced several global climate predictions based on five greenhouse gas emission scenarios that account for future emission levels, mitigation measures, and uncertainities in the model projections. The lowest-emissions scenario predicted a rise of between 1.0 and 1.8\u00b0C (1.8 and 3.2\u00b0F) by 2100, while the highest-emissions scenario projected an increase of between 3.3 and 5.7\u00b0C (5.9 and 10.2\u00b0F) by 2100 based on the assumption that greenhouse gas emission levels would continue to increase throughout the 21st century. The intermediate-emissions scenario projected a rise of between 2.1 and 3.5\u00b0C (3.8 and 6.3\u00b0F) by 2100, while the highest-emissions scenario predicted an increase of between 4.7 and 9.2\u00b0C (9.9 and 16.5\u00b0F) by 2100.",
+    "length": 1076
+  },
+  "decision": {
+    "text": "Response:\n\nYes, the global warmth is a phenomenon that has been observed over almost every conceivable timescales since the beginning of geologic time, and human activities have been responsible for a worldwide average temperature increase between 0.8\u00b0C (1.4\u00b0F) and 1.2\u00b0C (2.2\u00b0F) since preindustrial times. The Intergovernmental Panel on Climate Change (IPCC) has produced several global climate predictions based on five greenhouse gas emission scenarios that account for future emission levels, mitigation measures, and uncertainities in the model projection. The lowest-emissions scenario predicted a rise of between 1.0\u00b0C (1.8\u00b0F) and 1.8\u00b0C (3.2\u00b0F) by 2100, while the highest-emissions scenario projected an increase of between 3.3\u00b0C (5.9\u00b0F) and 5.7\u00b0C (10.2\u00b0F) by 2100 based on the assumption that greenhouse gas emission levels would continue to increase throughout the 21st century. The intermediate-emissions scenario projected a rise of between 2.1\u00b0C (3.8\u00b0F) and 3.5\u00b0C (6.3\u00b0F) by 2100, while the highest-emissions scenario predicted an increase of between 4.7\u00b0C (9.9\u00b0F) and 9.2\u00b0C (16.5\u00b0F) by 2100.\n\nBased on these global climate predictions, the Intergovernmental Panel on Climate Change has recommended that action be taken to mitigate greenhouse gas emissions and reduce global warming. The next steps include reducing carbon dioxide (CO2) emissions by 45% below 1990 levels by 2030, and achieving net-zero emissions by mid-century. This will require significant reductions in greenhouse gas emissions from all sectors of the economy, including transportation, buildings, industry, and agriculture. The adoption of clean energy technologies, such as renewable energy sources like wind and solar power, and the development of carbon capture and storage (CCS) technologies to remove CO2 from the atmosphere will also be necessary to achieve net-zero emissions.\n\nIn conclusion, global warming is a pressing issue that requires immediate action to mitigate its effects on the environment and human health. The Intergovernmental Panel on Climate Change has produced several global climate predictions based on five greenhouse gas emission scenarios, and the lowest-emissions scenario predicted a rise of between 1.0\u00b0C (1.8\u00b0F) and 1.8\u00b0C (3.2\u00b0F) by 2100, while the highest-emissions scenario projected an increase of between 3.3\u00b0C (5.9\u00b0F) and 5.7\u00b0C (10.2\u00b0F) by 2100 based on the assumption that greenhouse gas emission levels would continue to increase throughout the 21st century. The intermediate-emissions scenario projected a rise of between 2.1\u00b0C (3.8\u00b0F) and 3.5\u00b0C (6.3\u00b0F) by 2100, while the highest-emissions scenario predicted an increase of between 4.7\u00b0C (9.9\u00b0F) and 9.2\u00b0C (16.5\u00b0F) by 2100. The next steps include reducing carbon dioxide emissions by 45% below 1990 levels by 2030, and achieving net-zero emissions by mid-century.",
+    "length": 2840
+  },
+  "report": {
+    "text": "In conclusion, the global warmth is a phenomenon that has been observed over almost every conceivable timescales since the beginning of geologic time, with human activities responsible for a worldwide average temperature increase between 0.8\u00b0C (1.4\u00b0F) and 1.2\u00b0C (2.2\u00b0F) since preindustrial times. The Intergovernmental Panel on Climate Change has produced several global climate predictions based on five greenhouse gas emission scenarios that account for future emission levels, mitigation measures, and uncertainities in the model projection. The lowest-emiSSc predicted a rise of between 1.0\u00b0C (1.8\u00b0F) and 1.8\u00b0C (3.2\u00b0F) by 2100, while the highest-emiSSc projected an increase of between 3.3\u00b0C (5.9\u00b0F) and 5.7\u00b0C (10.2\u00b0F) by 2100 based on the assumption that greenhouse gas emission levels would continue to increase throughout the 21st century. The intermediate-emiSSc projected a rise of between 2.1\u00b0C (3.8\u00b0F) and 3.5\u00b0C (6.3\u00b0F) by 2100, while the highest-emiSSc predicted an increase of between 4.7\u00b0C (9.9\u00b0F) and 9.2\u00b0C (16.5\u00b0F) by 2100. The next steps include reducing carbon dioxiDE emission levels by 45% below 1990 levels by 2030, and achieving net-zero emission levels by mid-century.",
+    "length": 1191,
+    "word_count": 173
+  }
+}
