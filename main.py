@@ -35,7 +35,7 @@ from agents import (
 logger = get_logger("main")
 
 # -------- CONFIG --------
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "tinyllama:1.1b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "phi3.5:latest")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DATA_DIR = Path(os.getenv("DATA_DIR", "artifacts/"))
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "."))

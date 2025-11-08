@@ -4,11 +4,16 @@ Generates concise summaries from ingested data.
 """
 
 import os
+import sys
+from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass
 
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from logging_config import get_logger
 
@@ -41,7 +46,7 @@ class SummarizerResult:
 
 def run_summarizer(
     text: str,
-    model_name: str = "tinyllama:1.1b",
+    model_name: str = "phi3.5:latest",
     temperature: float = 0.2,
     num_bullets: int = 3
 ) -> SummarizerResult:

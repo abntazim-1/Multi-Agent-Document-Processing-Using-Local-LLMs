@@ -4,11 +4,16 @@ Performs logical analysis and derives key insights or decisions.
 """
 
 import os
+import sys
+from pathlib import Path
 from typing import Optional, List
 from dataclasses import dataclass
 
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from logging_config import get_logger
 
@@ -95,7 +100,7 @@ def parse_decision_response(response_text: str) -> tuple:
 
 def run_decision(
     summary: str,
-    model_name: str = "tinyllama:1.1b",
+    model_name: str = "phi3.5:latest",
     temperature: float = 0.2
 ) -> DecisionResult:
     """

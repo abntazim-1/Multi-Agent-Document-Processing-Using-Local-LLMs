@@ -4,12 +4,16 @@ Handles loading, cleaning, and chunking of documents.
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from logging_config import get_logger
 

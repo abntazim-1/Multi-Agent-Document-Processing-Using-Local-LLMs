@@ -4,11 +4,15 @@ Compiles all outputs into a final structured report.
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from logging_config import get_logger
 
