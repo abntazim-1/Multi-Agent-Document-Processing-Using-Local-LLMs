@@ -1,6 +1,7 @@
-# Agentic Workflow
+# Multi-Agent-Document-Processing-Using-Local-LLMs
 
-A modular, agent-based workflow system that processes documents through a pipeline of specialized AI agents using Ollama and LangChain. The system ingests documents, generates summaries, makes decisions, creates reports, and outputs structured results in both human-readable and JSON formats.
+
+A fully local Multiagent document Processing workflow using LangChain and Ollama, enabling multi-agent collaboration for document ingestion, summarization, decision making, and report generation. Integrated modular agent design for scalability and maintainability.
 
 ## 🌟 Features
 
